@@ -1,0 +1,17 @@
+done
+====
+2/19 - 2/26
+- corrected small issue with nested quotations
+- fixed issue with trying to reconnect to already connected sockets
+- added callbacks to nodes, fixed concurrency issues with test code
+
+to-do
+=====
+- integrate with the other apps
+	- TCP issue with kryonet?
+- look at twitter analytics app
+- research further implementations
+
+to-do (later)
+============
+- research/implement js testing framework

@@ -11,7 +11,7 @@ var net = require('net');
 
 // Read in command line arguments
 var args = process.argv;
-var port = 20000;
+var port = 29188;
 var nNodes = 2;
 if (args.length == 4) { 
 	port = args[2];
@@ -40,32 +40,38 @@ var server = net.createServer(function(socket) {
   });
 
   socket.on('data', function(data) {
-  	console.log('received data: ' + data);
-  	// parse request into JSON
-  	var JSONdata = JSON.parse(data);
-  	var sender, receiver, data;
-  	
-  	// process 'send' request
-  	if (JSONdata["send"] != null) {
-  		console.log("received a send request");
-  		processSendReq(JSONdata, socket);
+	console.log('received data: ' + data);
+	// we might have received multiple JSON requests, so these must be split
+	var dataString = data.toString();
+	var JSONlist = dataString.split("|").slice(0, -1);			// drop the last element in the array since it should be null
+	console.log ("JSON list: " + JSONlist);
 
-  	// process 'receive request'
-  	} else if (JSONdata["receive"] != null) {
-  		console.log("received a receive request");
-  		processRecvReq(JSONdata, socket);
+	for (var i=0; i<JSONlist.length; i++) {
+		var toParse = JSONlist[i];
+	  	var JSONdata = JSON.parse(toParse);
+	  	var sender, receiver, data;
+	  	
+	  	// process 'send' request
+	  	if (JSONdata["send"] != null) {
+	  		console.log("received a send request");
+	  		processSendReq(JSONdata, socket);
 
-  	// error - malformed request
-  	} else {
-  		console.log("received malformed request - not send or receive");
-  	}
+	  	// process 'receive request'
+	  	} else if (JSONdata["receive"] != null) {
+	  		console.log("received a receive request");
+	  		processRecvReq(JSONdata, socket);
 
+	  	// error - malformed request
+	  	} else {
+	  		console.log("received malformed request - not send or receive");
+	  	}
+	}
   });
 
 });
 
 // listen on port 
-server.listen(port, function() {
+server.listen(port, "localhost", 10, function() {
   console.log('server bound');
 });
 
@@ -75,7 +81,7 @@ function processSendReq(JSONdata, socket) {
 	if (JSONdata["sender"] == null || JSONdata["receiver"] == null
 		|| JSONdata["message"] == null) {
 		console.log('received malformed send request - missing fields');
-		socket.write('{"Error":"Malformed send request"');
+		socket.write("{'Error':'Malformed send request'");
 		return;
 	}
 
@@ -86,7 +92,7 @@ function processSendReq(JSONdata, socket) {
 	// check if sender/receiver exceed shared state bounds
 	if (!validBounds(sender, receiver)) {
 		console.log('received malformed send request - out of bounds');
-		socket.write('{"Error":"Malformed send request"');
+		socket.write("{'Error':'Malformed send request'");
 		return;
 	}
 
@@ -94,7 +100,7 @@ function processSendReq(JSONdata, socket) {
 	console.log('successfully received send message request');
 	(sharedState[receiver][sender]).push(message);
 	console.log('shared state updated:' + sharedState);
-	socket.write('{"Message": "Success!"}');
+	socket.write("{'Message': 'Success!'}");
 	return;
 
 }
@@ -104,7 +110,7 @@ function processRecvReq(JSONdata, socket) {
 	// make sure we have a JSON array with the expected fields
 	if (JSONdata["sender"] == null || JSONdata["receiver"] == null) {
 		console.log('received malformed send request - missing fields');
-		socket.write('{"Error":"Malformed send request"}');
+		socket.write("{'Error':'Malformed send request'}");
 		return;
 	}
 
@@ -115,7 +121,7 @@ function processRecvReq(JSONdata, socket) {
 	// check if sender/receiver exceed shared state bounds
 	if (!validBounds(sender, receiver)) {
 		console.log('received malformed send request - out of bounds');
-		socket.write('{"Error":"Malformed send request"}');
+		socket.write("{'Error':'Malformed send request'}");
 		return;
 	}
 
@@ -123,8 +129,8 @@ function processRecvReq(JSONdata, socket) {
 	if (sharedState[receiver][sender].length > 0) {
 		// splice(0,1) is equivalent to removing the first element
 		message = ((sharedState[receiver][sender]).splice(0,1))[0]; 
-		console.log('outgoing message is ' + message.toString());		
-		socket.write('{"Message":' + message + "}" )
+		console.log('outgoing message:' + message.toString());		
+		socket.write("{'Message':" + message + "}" )
 	}
 
 }
