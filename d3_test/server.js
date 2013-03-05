@@ -1,3 +1,4 @@
+// ----- D3 Demo ------
 /*
  * Node
  *   Node in message-passing implementation
@@ -70,46 +71,30 @@ Node.prototype.receiveMessage = function(fromNode, callback) {
 
 // -------------------- Test code --------------------------------
 var port = 12345;
+var __dir = "/home/sirui/Desktop/CPSC490/d3_test"
+var __data = "/data.tsv"
 
-// -------------------- Basic test of nodes ---------------------------
-var fromNode = new Node(2,0,port);
+// -------------------- Receive data from server ---------------------------
+var node = new Node(2,0,port);
 
 var jsonToSend = "{'Hi': 'From Node 0'}";
 var toSend = JSON.stringify(jsonToSend);
-fromNode.sendMessage(1, toSend, function() {
-	var toNode = new Node(2,1,port);
-	toNode.receiveMessage(0, function (data) {
+node.receiveMessage(0, function (data) {
 		console.log('callback fired: ' + data);
 	});
-});
 
-// -------------------- Test multiple receives  ----------------
-// var send1 = new Node(3,0,port);
-// var send2 = new Node(3,1,port);
+// -------------------- Write data out to data.tsv -------------------------
+var fs = require('fs');
+fs.writeFile(__dir + __data, "letter\tfrequency\nA\t10\nB\t10", function(err) {
+    if(err) {
+        console.log(err);
+    } else {
+        console.log("The file was saved!");
+    }
+}); 
 
-// var sendMsg = "{'Hi': 'from node 1'}";
-// var response = send1.sendMessage(2, sendMsg);
-// var sendMsg = "{'Hi': 'from node 2'}";
-// var response = send2.sendMessage(2, sendMsg, function() {
-// 	var recv = new Node(3,2,port);
-// 	recv.receiveMessage(0);
-// 	recv.receiveMessage(1);
-// });
-
-// -------------- Test multiple messages on same channel ----------------
-// var send = new Node(2,0,port);
-
-// var sendMsg = "{'Hi': 'first message'}";
-// send.sendMessage(1, sendMsg);
-
-// var send = new Node(2,0,port);
-// var sendMsg = "{'Hi': 'second message'}";
-// send.sendMessage(1, sendMsg);
-
-// var recv = new Node(2,1,port);
-// response = recv.receiveMessage(0);
-// console.log ('first receive: ' + response);
-
-// var recv = new Node(2,1,port);
-// response = recv.receiveMessage(1);
-// console.log ('second receive: ' + response);
+// -------------------- Server up webpage --------------------------
+var connect = require('connect');
+connect.createServer(
+    connect.static(__dir)
+).listen(8081);

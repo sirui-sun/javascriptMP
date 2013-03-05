@@ -3,7 +3,7 @@
  *   Server for message-passing implementation
  *
  *   USEAGE: >> node leader.node.js <port number> <num nodes>
- *    Defaults to port 30000, two nodes
+ *    Defaults to port 12345, two nodes
  */
 
  // Required libraries
@@ -11,7 +11,7 @@ var net = require('net');
 
 // Read in command line arguments
 var args = process.argv;
-var port = 29188;
+var port = 12345;
 var nNodes = 2;
 if (args.length == 4) { 
 	port = args[2];
@@ -41,38 +41,32 @@ var server = net.createServer(function(socket) {
 
   socket.on('data', function(data) {
 	console.log('received data: ' + data);
-	// we might have received multiple JSON requests, so these must be split
 	var dataString = data.toString();
-	var JSONlist = dataString.split("|").slice(0, -1);			// drop the last element in the array since it should be null
-	console.log ("JSON list: " + JSONlist);
+  	var JSONdata = JSON.parse(dataString);
+  	var sender, receiver, data;
+  	
+  	// process 'send' request
+  	if (JSONdata["send"] != null) {
+  		console.log("received a send request");
+  		processSendReq(JSONdata, socket);
 
-	for (var i=0; i<JSONlist.length; i++) {
-		var toParse = JSONlist[i];
-	  	var JSONdata = JSON.parse(toParse);
-	  	var sender, receiver, data;
-	  	
-	  	// process 'send' request
-	  	if (JSONdata["send"] != null) {
-	  		console.log("received a send request");
-	  		processSendReq(JSONdata, socket);
+  	// process 'receive request'
+  	} else if (JSONdata["receive"] != null) {
+  		console.log("received a receive request");
+  		processRecvReq(JSONdata, socket);
 
-	  	// process 'receive request'
-	  	} else if (JSONdata["receive"] != null) {
-	  		console.log("received a receive request");
-	  		processRecvReq(JSONdata, socket);
+  	// error - malformed request
+  	} else {
+  		console.log("received malformed request - not send or receive");
+  	}
 
-	  	// error - malformed request
-	  	} else {
-	  		console.log("received malformed request - not send or receive");
-	  	}
-	}
   });
 
 });
 
 // listen on port 
 server.listen(port, "localhost", 10, function() {
-  console.log('server bound');
+  console.log('server bound to port: ' + port);
 });
 
 // process a send request: update the shared state Array, reply with status
